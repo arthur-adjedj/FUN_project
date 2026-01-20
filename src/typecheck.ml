@@ -55,7 +55,7 @@ let rec infer              (* [infer] expects... *)
 
       (* Extend the typing environment. *)
 
-      let outside_tenv = tenv in
+      (* let outside_tenv = tenv in *)
       let tenv = bind x domain tenv in
 
       (* Typecheck the function body, and build a function type. *)
@@ -78,10 +78,59 @@ let rec infer              (* [infer] expects... *)
       info := Some { domain = domain; codomain = codomain };
       check p xenv tsubst tenv jenv term2 domain;
       codomain
+  
+      (* let x = t in t *)
+  | TeLet (a, term1, term2) -> 
+      let ty1 = infer p xenv loc tsubst tenv jenv term1 in
+      let tenv = bind a ty1 tenv in
+      infer p xenv loc tsubst tenv jenv term2
+  
+  | TeTyAbs (a, term) -> 
+      let xenv = Export.bind xenv a in
+      let ty = infer p xenv loc tsubst tenv jenv term in
+      TyForall (abstract a ty)
+  
+  | TeTyApp (t,ty, info) -> 
+      let unabstracted_ty = infer p xenv loc tsubst tenv jenv t in
+      begin
+        match unabstracted_ty with
+        | TyForall ty_ctx -> 
+          info := Some { gen = ty_ctx};  
 
-  | _ ->
-     failwith "TYPECHECKING IS NOT IMPLEMENTED YET!" (* do something here! *)
+          fill ty_ctx ty
+        | _ -> expected_form xenv loc "Forall" unabstracted_ty
+      end
 
+  | TeData (a, tys, terms, info) ->
+      (* let rec check_con_args con_ty args = *)
+        (* match args with *)
+          (* | [] -> con_ty  *)
+          (* | t::tl ->  *)
+            (* begin *)
+              (* let domain, codomain = deconstruct_arrow xenv loc con_ty in *)
+              (* check p xenv tsubst tenv jenv t domain; *)
+              (* check_con_args codomain tl *)
+            (* end *)
+      (* in *)
+      let con_ty = lookup_and_instantiate p xenv loc a tys in
+      let domains,codomain = deconstruct_data_arrow xenv loc a con_ty (List.length terms) in
+      List.fold_left2 (fun _ -> check p xenv tsubst tenv jenv) () terms domains;
+      info := Some codomain;
+      codomain
+  
+  | TeTyAnnot (t, ty) ->
+      check p xenv tsubst tenv jenv t ty;
+      ty
+  
+  | TeMatch (t, ty, clauses, info) ->
+    let t_ty = infer p xenv loc tsubst tenv jenv t in  
+    List.iter (check_clause p xenv tsubst tenv jenv t_ty ty) clauses;
+    info := Some ty;
+    ty
+
+  | TeLoc(loc, term) ->
+      infer p xenv loc tsubst tenv jenv term
+      
 and check                  (* [check] expects... *)
     (p : pre_program)      (* a program, which provides information about type & data constructors; *)
     (xenv : Export.env)    (* a pretty-printer environment, for printing types; *)
@@ -100,9 +149,9 @@ and check                  (* [check] expects... *)
 
   match term with
   | TeLoc (loc, term) ->
-
       let inferred = infer p xenv loc tsubst tenv jenv term in
-      failwith "CHECK IS NOT COMPLETE YET!" (* do something here! *)
+      if not (TS.equal tsubst inferred expected) then
+        mismatch xenv loc expected inferred
 
   | _ ->
      (* out of luck! We run in degraded mode, location will be wrong!
@@ -189,8 +238,7 @@ and check_clause p xenv tsubst tenv jenv scrutinee result = function
       (* What remains of [dcty] should now be an arrow type, whose domain
 	 is a tuple type. Extract the domains and codomain. *)
 
-      let domains, codomain =
-	deconstruct_data_arrow xenv loc dc dcty (List.length tevars)
+      let domains, codomain = deconstruct_data_arrow xenv loc dc dcty (List.length tevars)
       in
 
       (* Bind the term variables. *)
