@@ -126,6 +126,18 @@ and 'f _pattern =
       (* K [ a ... a ] { x; ...; x } *)
 [@@deriving show, map]
 
+let rec hasvar (a : atom) (t : ('a, 'b, 'c, 'd, 'e, 'f) _fterm) = match t with
+| TeVar (b, _) -> a = b
+| TeAbs (_, _, t) -> hasvar a t
+| TeApp (t1, t2, _) -> hasvar a t1 || hasvar a t2
+| TeLet (_, t1, t2) -> hasvar a t1 || hasvar a t2
+| TeTyAbs (_, t) -> hasvar a t
+| TeTyApp (t, _, _) -> hasvar a t
+| TeData (_, _, l, _) -> List.exists (hasvar a) l
+| TeTyAnnot (t, _) -> hasvar a t
+| TeMatch (_, _, _, _) -> assert false
+| TeLoc (_, t) -> hasvar a t
+
 (* ------------------------------------------------------------------------- *)
 
 (* The type constructor table maps a type constructor to its arity. *)

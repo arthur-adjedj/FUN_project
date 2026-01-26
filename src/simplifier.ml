@@ -153,6 +153,16 @@ and simplify1
      (* Drop locations, as they become meaningless *)
      simplify1 args (Scope (subst, tsubst, term))
 
+     (* \beta rule*)
+   | TeApp (TeAbs (x, ty, body), arg, info) -> 
+      let term = TeLet (x, arg, body) in
+      simplify1 args (Scope (subst, tsubst, term))
+
+     (* \beta_\tau rule*)
+   | TeTyApp (TeTyAbs(a, t) , ty, info) -> 
+      simplify1 args (Scope (subst, Tsubst.bind a ty tsubst, t))
+
+
   (* 1. Build up the evaluation context E[_] in args *)
   | TeApp (term1, term2, info) ->
      let args = CtxtApp (Scope (subst, tsubst, (term2, info)), args) in
@@ -168,7 +178,11 @@ and simplify1
   (* 2. Contract the context as much as possible *)
   (*    rule (\beta), (\beta_\tau), (\case), etc. *)
 
-  | _ when false -> failwith "Simplify the context here!"
+   (*drop*)
+   | TeLet (a, _, term) when not (hasvar a term) -> simplify1 args (Scope (subst, tsubst, term))
+
+
+  (* | _ when false -> failwith "Simplify the context here!" *)
 
   | _ ->
      (* 3. Structural rules *)
