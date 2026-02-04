@@ -91,6 +91,10 @@ type_variable:
 | id = IDENTIFIER
     { Identifier.mak type_sort id }
 
+join_variable:
+| id = IDENTIFIER
+    { Identifier.mak term_sort id }
+
 data_constructor:
 | id = TAG
     { Identifier.mak data_sort id }
@@ -247,6 +251,9 @@ term:
 
 | LET f = term_variable def = non_recursive_def IN t = loc(term)
     { SynTeLet (f, def, t) }
+
+| JOIN j = join_variable def = non_recursive_def IN t = loc(term) 
+    { SynTeJoin (j, def, t)}
 
 
 (* ------------------------------------------------------------------------- *)

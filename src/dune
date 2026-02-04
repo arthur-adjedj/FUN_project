@@ -7,6 +7,7 @@
 
 (executable
   (public_name joujou.exe)
+  (modes byte exe)
   (name joujou)
   (promote (until-clean))
   (preprocess (pps ppx_deriving.std))
@@ -18,6 +19,7 @@
 (env
   (dev (flags :standard
           -strict-sequence -g
-          -w A-3-4-8-9-26-27-30-32-33-44-42-45-50-70))
-  (release (flags :standard))
+          -w A-3-4-9-26-27-30-32-33-44-42-45-50-70))
+  (release (flags :standard)
+  )
 )
