@@ -17,7 +17,7 @@ let binds xts tenv =
     bind x ty tenv
   ) tenv xts
 
-let binds_tycon ty1 ty2 tsubst =
+let [@warning "-8"] binds_tycon ty1 ty2 tsubst =
   match ty1, ty2 with
   | TyCon (tc1, args1), TyCon (tc2, args2) when Atom.equal tc1 tc2 ->
      let args1 = List.map (fun (TyFreeVar x) -> x) args1 in

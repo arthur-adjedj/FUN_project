@@ -17,7 +17,7 @@ TYPEFAILJ=$(BADJ:.fj=.typefailj)
 OPTIMIZE2=$(SRC:.f=.opt2)
 OPTIMIZE3=$(SRCJ:.fj=.opt3) $(SRC:.f=.opt3)
 
-JOUJOU ?= src/joujou
+JOUJOU ?= ../src/joujou.exe
 
 ################################################################
 test: test1 test2 test3

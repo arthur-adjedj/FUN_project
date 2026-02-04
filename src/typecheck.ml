@@ -102,16 +102,6 @@ let rec infer              (* [infer] expects... *)
       end
 
   | TeData (a, tys, terms, info) ->
-      (* let rec check_con_args con_ty args = *)
-        (* match args with *)
-          (* | [] -> con_ty  *)
-          (* | t::tl ->  *)
-            (* begin *)
-              (* let domain, codomain = deconstruct_arrow xenv loc con_ty in *)
-              (* check p xenv tsubst tenv jenv t domain; *)
-              (* check_con_args codomain tl *)
-            (* end *)
-      (* in *)
       let con_ty = lookup_and_instantiate p xenv loc a tys in
       let domains,codomain = deconstruct_data_arrow xenv loc a con_ty (List.length terms) in
       List.fold_left2 (fun _ -> check p xenv tsubst tenv jenv) () terms domains;
@@ -130,6 +120,8 @@ let rec infer              (* [infer] expects... *)
 
   | TeLoc(loc, term) ->
       infer p xenv loc tsubst tenv jenv term
+
+  | TeJoin (_,t1,t2) -> assert false
       
 and check                  (* [check] expects... *)
     (p : pre_program)      (* a program, which provides information about type & data constructors; *)
@@ -302,3 +294,4 @@ let rec type_of (term: fterm): ftype =
 
   | TeTyAnnot (_, ty) -> ty
   | TeLoc (_, term) -> type_of term
+  | TeJoin (_,_,_) -> assert false

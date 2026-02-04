@@ -81,6 +81,11 @@ type ('a, 'b, 'c, 'd, 'e, 'f) _fterm =
       ('a, 'b, 'c, 'd, 'e, 'f) _fterm * 
       ('a, 'b, 'c, 'd, 'e, 'f) _fterm
       (* let x = t in t *)
+  | TeJoin of 
+      atom * 
+      ('a, 'b, 'c, 'd, 'e, 'f) _fterm * 
+      ('a, 'b, 'c, 'd, 'e, 'f) _fterm
+      (* join x = t in t *)
   | TeTyAbs of
       atom * 
       ('a, 'b, 'c, 'd, 'e, 'f) _fterm
@@ -127,7 +132,7 @@ and 'f _pattern =
 [@@deriving show, map]
 
 let rec hasvar (a : atom) (t : ('a, 'b, 'c, 'd, 'e, 'f) _fterm) = match t with
-| TeVar (b, _) -> a = b
+| TeVar (b, _) -> Atom.equal a b
 | TeAbs (_, _, t) -> hasvar a t
 | TeApp (t1, t2, _) -> hasvar a t1 || hasvar a t2
 | TeLet (_, t1, t2) -> hasvar a t1 || hasvar a t2
@@ -135,8 +140,9 @@ let rec hasvar (a : atom) (t : ('a, 'b, 'c, 'd, 'e, 'f) _fterm) = match t with
 | TeTyApp (t, _, _) -> hasvar a t
 | TeData (_, _, l, _) -> List.exists (hasvar a) l
 | TeTyAnnot (t, _) -> hasvar a t
-| TeMatch (_, _, _, _) -> assert false
+| TeMatch (t, _, clauses, _) -> hasvar a t || List.exists (fun (Clause (_,t)) -> hasvar a t) clauses
 | TeLoc (_, t) -> hasvar a t
+| TeJoin (_, t1, t2) -> hasvar a t1 || hasvar a t2
 
 (* ------------------------------------------------------------------------- *)
 

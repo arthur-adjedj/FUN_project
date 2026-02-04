@@ -57,7 +57,7 @@ module Subst = struct
 
   let empty = AtomMap.empty
 
-  let bind = AtomMap.add
+  let bind : atom -> pre_fterm-> t -> t = AtomMap.add
 
   let lookup k default env = 
     try
@@ -142,35 +142,40 @@ let rec simplify: fterm scoped -> pre_fterm = function
 and simplify1
           (args: context)
           (Scope (subst, tsubst, term): fterm scoped): pre_fterm =
-  match term with
+  match term, args with
   (* 0. go through noise *)
-  | TeTyAnnot (term, _) ->
+  | TeTyAnnot (term, _),_ ->
      (* Update type annotation *)
      let typ = type_of_cont args in
      let term = simplify1 args (Scope (subst, tsubst, term)) in
      TeTyAnnot (term, typ)
-  | TeLoc (loc, term) ->  
+  | TeLoc (loc, term),_ ->  
      (* Drop locations, as they become meaningless *)
      simplify1 args (Scope (subst, tsubst, term))
 
      (* \beta rule*)
-   | TeApp (TeAbs (x, ty, body), arg, info) -> 
-      let term = TeLet (x, arg, body) in
-      simplify1 args (Scope (subst, tsubst, term))
+   (* | TeApp (TeAbs (x, ty, body), arg, info) ->  *)
+      (* let term = TeLet (x, arg, body) in *)
+      (* simplify1 args (Scope (subst, tsubst, term)) *)
 
      (* \beta_\tau rule*)
-   | TeTyApp (TeTyAbs(a, t) , ty, info) -> 
-      simplify1 args (Scope (subst, Tsubst.bind a ty tsubst, t))
+   (* | TeTyApp (TeTyAbs(a, t) , ty, info) ->  *)
+      (* simplify1 args (Scope (subst, Tsubst.bind a ty tsubst, t)) *)
 
+      (* cases *)
+   (* | TeMatch (TeData (dk, dtys, dargs, dinfo), rty, clauses, info) ->  *)
+      (* let Clause (PatData (_, _, tyvars, pargs, _), term) = List.find (fun (Clause (PatData (_, dc, _, _, _), _)) -> dc = dk) clauses in *)
+      (* let term = List.fold_left2 (fun term parg dart -> TeLet (parg,dart,term)) term pargs dargs  in *)
+      (* simplify1 args (Scope (subst, tsubst, term))  *)
 
   (* 1. Build up the evaluation context E[_] in args *)
-  | TeApp (term1, term2, info) ->
+  | TeApp (term1, term2, info),_ ->
      let args = CtxtApp (Scope (subst, tsubst, (term2, info)), args) in
      simplify1 args (Scope (subst, tsubst, term1))
-  | TeTyApp (term1, type2, info) ->
+  | TeTyApp (term1, type2, info),_ ->
      let args = CtxtTyApp (Scope (subst, tsubst, (type2, info)), args) in
      simplify1 args (Scope (subst, tsubst, term1))
-  | TeMatch (scrutinee, result, clauses, info) ->
+  | TeMatch (scrutinee, result, clauses, info),_ ->
      let args = CtxtMatch (Scope (subst, tsubst, (result, clauses, info)), args) in
      simplify1 args (Scope (subst, tsubst, scrutinee))
 
@@ -178,11 +183,21 @@ and simplify1
   (* 2. Contract the context as much as possible *)
   (*    rule (\beta), (\beta_\tau), (\case), etc. *)
 
-   (*drop*)
-   | TeLet (a, _, term) when not (hasvar a term) -> simplify1 args (Scope (subst, tsubst, term))
+   | TeAbs (x, ty, body), CtxtApp (Scope (asubst, atsubst, (aterm, info)),args) -> 
+      let term = simplify1 args (Scope (asubst, atsubst, aterm)) in 
+      simplify1 args (Scope (Subst.bind x term subst, tsubst, body))
+   
+   | TeTyAbs (x, body), CtxtTyApp (Scope (asubst, atsubst, (ty, info)),args) -> 
+      simplify1 args (Scope (subst, Tsubst.bind x ty tsubst, body))
 
-
-  (* | _ when false -> failwith "Simplify the context here!" *)
+  (*drop/inline. If the var is used, we can inline the let entirely by substituting a for the term it bound in the body, otherwise drop the let entirely.   *)
+   (* | TeLet (a, lterm, term),_ ->  *)
+      (* if (hasvar a term) then begin  *)
+         (* let lterm = simplify1 args (Scope (subst, tsubst, lterm)) in *)
+         (* simplify1 args (Scope (Subst.bind a lterm subst, tsubst, term)) *)
+      (* end else  *)
+         (* begin *)
+         (* simplify1 args (Scope (subst, tsubst, term)) end *)
 
   | _ ->
      (* 3. Structural rules *)
