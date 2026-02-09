@@ -93,7 +93,7 @@ type_variable:
 
 join_variable:
 | id = IDENTIFIER
-    { Identifier.mak term_sort id }
+    { Identifier.mak join_sort id }
 
 data_constructor:
 | id = TAG
@@ -252,8 +252,16 @@ term:
 | LET f = term_variable def = non_recursive_def IN t = loc(term)
     { SynTeLet (f, def, t) }
 
-| JOIN j = join_variable def = non_recursive_def IN t = loc(term) 
-    { SynTeJoin (j, def, t)}
+| JOIN j = join_variable 
+  ty_args = multiple(formal_type_arguments)
+  te_args = multiple(term_arguments)
+  COLON codomain = typ 
+  EQ u = loc(term)
+  IN t = loc(term) 
+    { SynTeJoin (j, ty_args, te_args, codomain, u, t)}
+
+| JUMP j = join_variable tvars = multiple(actual_type_arguments) LBRACE fields = semi(term) RBRACE codomain = preceded(COLON,typ)
+    { SynTeJump (j, tvars, fields, codomain)}
 
 
 (* ------------------------------------------------------------------------- *)

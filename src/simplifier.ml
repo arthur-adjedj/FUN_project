@@ -153,21 +153,6 @@ and simplify1
      (* Drop locations, as they become meaningless *)
      simplify1 args (Scope (subst, tsubst, term))
 
-     (* \beta rule*)
-   (* | TeApp (TeAbs (x, ty, body), arg, info) ->  *)
-      (* let term = TeLet (x, arg, body) in *)
-      (* simplify1 args (Scope (subst, tsubst, term)) *)
-
-     (* \beta_\tau rule*)
-   (* | TeTyApp (TeTyAbs(a, t) , ty, info) ->  *)
-      (* simplify1 args (Scope (subst, Tsubst.bind a ty tsubst, t)) *)
-
-      (* cases *)
-   (* | TeMatch (TeData (dk, dtys, dargs, dinfo), rty, clauses, info) ->  *)
-      (* let Clause (PatData (_, _, tyvars, pargs, _), term) = List.find (fun (Clause (PatData (_, dc, _, _, _), _)) -> dc = dk) clauses in *)
-      (* let term = List.fold_left2 (fun term parg dart -> TeLet (parg,dart,term)) term pargs dargs  in *)
-      (* simplify1 args (Scope (subst, tsubst, term))  *)
-
   (* 1. Build up the evaluation context E[_] in args *)
   | TeApp (term1, term2, info),_ ->
      let args = CtxtApp (Scope (subst, tsubst, (term2, info)), args) in
@@ -179,26 +164,29 @@ and simplify1
      let args = CtxtMatch (Scope (subst, tsubst, (result, clauses, info)), args) in
      simplify1 args (Scope (subst, tsubst, scrutinee))
 
-
   (* 2. Contract the context as much as possible *)
   (*    rule (\beta), (\beta_\tau), (\case), etc. *)
-
+   (* \beta rule*)
    | TeAbs (x, ty, body), CtxtApp (Scope (asubst, atsubst, (aterm, info)),args) -> 
-      let term = simplify1 args (Scope (asubst, atsubst, aterm)) in 
-      simplify1 args (Scope (Subst.bind x term subst, tsubst, body))
+      (* let term = simplify1 args (Scope (asubst, atsubst, aterm)) in  *)
+      simplify1 args (Scope (subst, tsubst, TeLet(x, aterm, body)))
    
+   (* \beta_\tau rule*)
    | TeTyAbs (x, body), CtxtTyApp (Scope (asubst, atsubst, (ty, info)),args) -> 
       simplify1 args (Scope (subst, Tsubst.bind x ty tsubst, body))
 
-  (*drop/inline. If the var is used, we can inline the let entirely by substituting a for the term it bound in the body, otherwise drop the let entirely.   *)
-   (* | TeLet (a, lterm, term),_ ->  *)
-      (* if (hasvar a term) then begin  *)
-         (* let lterm = simplify1 args (Scope (subst, tsubst, lterm)) in *)
-         (* simplify1 args (Scope (Subst.bind a lterm subst, tsubst, term)) *)
-      (* end else  *)
-         (* begin *)
-         (* simplify1 args (Scope (subst, tsubst, term)) end *)
+   (* cases *)
+   | TeData (dk, dtys, dargs, _),  CtxtMatch (Scope (_, _, (_, clauses, _)), args) -> 
+      let Clause (PatData (_, _, tyvars, tevars, _), term) = List.find (fun (Clause (PatData (_, dc, _, _, _), _)) -> Atom.equal dc dk) clauses in
+      let term   = List.fold_left2 (fun term parg darg -> TeLet(parg, darg,term)) term tevars dargs in
+      let tsubst = List.fold_left2 (fun tsubst pty dty -> Tsubst.bind pty dty tsubst) tsubst tyvars dtys in
+      simplify1 args (Scope (subst, tsubst, term)) 
 
+  (*drop/inline. *)
+   | TeLet (a, lterm, term), args -> 
+      let lterm = simplify1 (Nil (Typecheck.type_of lterm)) (Scope (subst, tsubst, lterm)) in
+      simplify1 args (Scope (Subst.bind a lterm subst, tsubst, term))
+      
   | _ ->
      (* 3. Structural rules *)
      let term = simplify2 (Scope (subst, tsubst, term)) in
@@ -238,7 +226,6 @@ and simplify2
      let fields = List.map local_simplify fields in
      TeData (dc, tys, fields, reset ())
 
-
   | _ -> assert false
 
 
@@ -251,15 +238,23 @@ and simplify_clause
     (Scope (subst, tsubst, clause): clause scoped)
     : pre_clause =
   match clause with
-  | Clause (pattern, term) ->
+  | Clause (PatData (_,dc,tyvars,tevars,_) as pattern, term) ->
      let pattern = simplify_pattern pattern in
+     let subst = match scrutinee with
+       (* If we match on a variable, we want to add a mapping from that var to the pattern it matches onto to allow for further simplifications*)
+      | TeVar (x,_) -> 
+                           (*Why are under-applied constructors not eta-expanded in OCaml ? This is ugly...*) 
+         let tys   = List.map (fun a -> TyFreeVar a) tyvars in
+         let targs = List.map (fun x -> TeVar (x, reset ())) tevars in
+         let cstr = TeData (dc, tys, targs, reset ()) in 
+         Subst.bind x cstr subst
+      | _ -> subst in
      let term = simplify (Scope (subst, tsubst, term)) in
      Clause (pattern, term)
 
 (* [simplify_pattern p] merely has to drop the useless metadata info. *)
 and simplify_pattern (PatData (loc, dc, tyvars, tevars, _)) = 
   PatData (loc, dc, tyvars, tevars, reset ())
-
 
 (* [apply t args] flattens out the evaluation context, represented by
    [args], around the term [t]. Since we are dealing with scoped

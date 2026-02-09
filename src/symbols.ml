@@ -32,8 +32,10 @@ let rec fv = function
       union_map fv fields
   | TeMatch (term, _, clauses, _) ->
       AtomSet.union (fv term) (union_map fv_clause clauses)
-  | TeJoin (x, term1, term2) ->
+  | TeJoin (_, _, _,_, term1, term2) ->
       AtomSet.union (fv term1) (fv term2)
+  | TeJump (_,_,tes,_) -> 
+      union_map fv tes
 and fv_clause = function
   | Clause (PatData (_, _, _, tevars, _), term) ->
       sremove tevars (fv term)

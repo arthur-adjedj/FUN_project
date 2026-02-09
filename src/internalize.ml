@@ -118,10 +118,18 @@ let rec iterm tctable env = function
       let x, env' = bind env x in
       TeLet (x, iterm tctable env term1, iterm tctable env' term2)
 
-  | SynTeJoin (x, term1, term2) -> 
-      let x, env' = bind env x in
-      TeJoin (x, iterm tctable env term1, iterm tctable env' term2)
+  | SynTeJoin (x, ftys, vlist, ty, term1, term2) -> 
+      assert false
+      (* let x, env' = bind env x in *)
+      (* TeJoin (x, iterm tctable env term1, iterm tctable env' term2) *)
       
+  | SynTeJump (x, tys, tes, ty) -> 
+      let x, env = bind env x in
+      let tys = itypes tctable env tys in
+      let tes = iterms tctable env tes in
+      let ty = itype tctable env ty in
+      TeJump (x, tys, tes, ty)
+  
   | SynTeTyAbs (a, term) ->
       let a, env = bind env a in
       TeTyAbs (a, iterm tctable env term)

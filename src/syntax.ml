@@ -19,6 +19,7 @@ open Error
 
 let term_sort : sort = (0, "term")
 let type_sort : sort = (1, "type")
+let join_sort : sort = (2, "join")
 let data_sort : sort = (3, "data constructor")
 let typecon_sort : sort = (4, "type constructor")
 
@@ -88,8 +89,10 @@ type fterm =
       (* t t *)
   | SynTeLet of identifier * fterm * fterm
       (* let x = t in t *)
-  | SynTeJoin of identifier * fterm * fterm
-      (* join a* (x : t)* = e in u *)
+  | SynTeJoin of identifier * identifier list * (identifier * ftype) * ftype * fterm * fterm
+      (* join j a* (x : t)* = e in u *)
+  | SynTeJump of identifier * (ftype list) * fterm list * ftype
+      (* jump j ty* t* : ty *)
   | SynTeTyAbs of identifier * fterm
       (* fun [ a ] = t *)
   | SynTeTyApp of fterm * ftype

@@ -121,7 +121,8 @@ let rec infer              (* [infer] expects... *)
   | TeLoc(loc, term) ->
       infer p xenv loc tsubst tenv jenv term
 
-  | TeJoin (_,t1,t2) -> assert false
+  | TeJoin (j,tys, vtys, ty, body, term) -> assert false
+  | TeJump (j,tys,tes,ty) -> assert false
       
 and check                  (* [check] expects... *)
     (p : pre_program)      (* a program, which provides information about type & data constructors; *)
@@ -294,4 +295,5 @@ let rec type_of (term: fterm): ftype =
 
   | TeTyAnnot (_, ty) -> ty
   | TeLoc (_, term) -> type_of term
-  | TeJoin (_,_,_) -> assert false
+  | TeJoin (_,_,_,_,_,_) -> assert false
+  | TeJump (_,_,_,_) -> assert false
