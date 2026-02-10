@@ -108,8 +108,8 @@ let rec iterm tctable env = function
       TeVar (Import.resolve env id, ref None)
 
   | SynTeAbs (x, ftype, term) ->
-      let x, env = bind env x in
-      TeAbs (x, itype tctable env ftype, iterm tctable env term)
+      let x, env' = bind env x in
+      TeAbs (x, itype tctable env ftype, iterm tctable env' term)
 
   | SynTeApp (term1, term2) ->
       TeApp (iterm tctable env term1, iterm tctable env term2, ref None)
@@ -118,13 +118,18 @@ let rec iterm tctable env = function
       let x, env' = bind env x in
       TeLet (x, iterm tctable env term1, iterm tctable env' term2)
 
-  | SynTeJoin (x, ftys, vlist, ty, term1, term2) -> 
-      assert false
-      (* let x, env' = bind env x in *)
-      (* TeJoin (x, iterm tctable env term1, iterm tctable env' term2) *)
+  | SynTeJoin (x, tyvars, vlist, ty, term1, term2) -> 
+      let env, tyvars = Import.bind_sequentially env tyvars in
+      let env, vatoms  = Import.bind_sequentially env (List.map fst vlist) in
+      let vtys = List.map (fun (_,ty) -> itype tctable env ty) vlist in
+      let ty = itype tctable env ty in
+      let term1 = iterm tctable env term1 in
+      let x, env' = bind env x in
+      let term2 = iterm tctable env' term2 in
+      TeJoin (x, tyvars, vatoms , vtys, ty, term1, term2)
       
   | SynTeJump (x, tys, tes, ty) -> 
-      let x, env = bind env x in
+      let x = Import.resolve env x  in
       let tys = itypes tctable env tys in
       let tes = iterms tctable env tes in
       let ty = itype tctable env ty in

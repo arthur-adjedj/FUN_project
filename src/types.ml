@@ -105,6 +105,13 @@ let rec fill i ty c =
 let fill (_, c) ty =
   fill 0 ty c
 
+let instantiate ty1 a ty2 =
+  fill (abstract a ty1) ty2
+
+(* This is as innefficient as it gets, does two traversals of ty1 for every single variable being substituted*)
+let instantiates ty1 tyvs tys =
+  List.fold_left2 instantiate ty1 tyvs tys
+
 (* ------------------------------------------------------------------------- *)
 
 (* Hints. *)

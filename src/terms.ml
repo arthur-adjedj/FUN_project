@@ -83,8 +83,8 @@ type ('a, 'b, 'c, 'd, 'e, 'f) _fterm =
       (* let x = t in t *)
   | TeJoin of 
       atom * 
-      ftype list *
-      (atom * ftype) list * 
+      atom list *
+      atom list * ftype list * 
       ftype *
       ('a, 'b, 'c, 'd, 'e, 'f) _fterm *
       ('a, 'b, 'c, 'd, 'e, 'f) _fterm
@@ -93,7 +93,7 @@ type ('a, 'b, 'c, 'd, 'e, 'f) _fterm =
       atom * 
       ftype list *
       ('a, 'b, 'c, 'd, 'e, 'f) _fterm list *
-      ftype 
+      ftype
       (* jump j ty* t* : ty *)
   | TeTyAbs of
       atom * 

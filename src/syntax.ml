@@ -89,8 +89,8 @@ type fterm =
       (* t t *)
   | SynTeLet of identifier * fterm * fterm
       (* let x = t in t *)
-  | SynTeJoin of identifier * identifier list * (identifier * ftype) * ftype * fterm * fterm
-      (* join j a* (x : t)* = e in u *)
+  | SynTeJoin of identifier * identifier list * (identifier * ftype) list * ftype * fterm * fterm
+      (* join j a* (x : t)* : ty = e in u *)
   | SynTeJump of identifier * (ftype list) * fterm list * ftype
       (* jump j ty* t* : ty *)
   | SynTeTyAbs of identifier * fterm

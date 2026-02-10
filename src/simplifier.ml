@@ -226,6 +226,17 @@ and simplify2
      let fields = List.map local_simplify fields in
      TeData (dc, tys, fields, reset ())
 
+  | TeJoin (j, tys, vas, vtys, ty, body, term) ->
+      let binders = List.map2 (fun a b -> (a,b)) vas vtys in
+      let tsubst' = Tsubst.binds binders tsubst in
+      let body = simplify (Scope (subst, tsubst', body)) in 
+      let term = simplify (Scope (subst, tsubst, term)) in
+      TeJoin (j,tys,vas,vtys,ty, body, term)
+
+  | TeJump(j, tys, tes, ty) -> 
+      let tes = List.map (fun t -> simplify (Scope (subst, tsubst, t))) tes in
+      TeJump(j, tys, tes,ty)
+      
   | _ -> assert false
 
 

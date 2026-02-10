@@ -31,7 +31,7 @@ open Atom
 
 (* For more details on the locally nameless representation of abstract syntax,
    see the paper ``Engineering Formal Metatheory'', by Brian Aydemir, Arthur
-   Charguéraud, Benjamin C. Pierce, Randy Pollack and Stephanie Weirich, in
+   Charguï¿½raud, Benjamin C. Pierce, Randy Pollack and Stephanie Weirich, in
    POPL 2008. *)
 
 (* As in the paper ``Polymorphic typed defunctionalization and concretization'',
@@ -77,6 +77,12 @@ val abstract: atom -> ftype -> ftype_context
    type. *)
 
 val fill: ftype_context -> ftype -> ftype
+
+(* [instantiate ty1 a ty2] Replaces every occurence of [a] in [ty1] with [ty2]*)
+val instantiate : ftype -> atom -> ftype -> ftype
+
+(* [instantiate ty1 a ty2] Replaces every occurence of [a] in [ty1] with [ty2]*)
+val instantiates : ftype -> atom list -> ftype list -> ftype
 
 (* ------------------------------------------------------------------------- *)
 

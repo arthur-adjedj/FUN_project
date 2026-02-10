@@ -121,8 +121,21 @@ let rec infer              (* [infer] expects... *)
   | TeLoc(loc, term) ->
       infer p xenv loc tsubst tenv jenv term
 
-  | TeJoin (j,tys, vtys, ty, body, term) -> assert false
-  | TeJump (j,tys,tes,ty) -> assert false
+  | TeJoin (j, tys, vatoms, vtys, ty, body, term) -> 
+    let xenv' = Export.sbind xenv tys in
+    let binders = List.map2 (fun a b -> (a,b)) vatoms vtys in
+    let tsubst' = TS.binds binders tsubst in
+    let tenv' = binds binders tenv in
+    let jenv = jbind j tys vtys jenv in
+    check p xenv' tsubst' tenv' jenv body ty;
+    check p xenv tsubst tenv jenv term ty;
+    ty
+      
+  | TeJump (j, tys, tes, ty) -> 
+      let (tyvars, vtys) = jlookup j jenv in
+      let tys = List.map (fun ty -> Types.instantiates ty tyvars tys)  vtys  in
+      List.iter2 (check p xenv tsubst tenv jempty) tes tys;
+      ty
       
 and check                  (* [check] expects... *)
     (p : pre_program)      (* a program, which provides information about type & data constructors; *)
@@ -295,5 +308,5 @@ let rec type_of (term: fterm): ftype =
 
   | TeTyAnnot (_, ty) -> ty
   | TeLoc (_, term) -> type_of term
-  | TeJoin (_,_,_,_,_,_) -> assert false
-  | TeJump (_,_,_,_) -> assert false
+  | TeJoin (_,_,_,_,ty,_,_) -> ty
+  | TeJump (_,_,_,ty) -> ty
