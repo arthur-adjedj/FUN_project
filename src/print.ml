@@ -266,9 +266,22 @@ and pterm env term =
       let term1 = pterm env term1 in
       let env = Export.bind env x in
       definition
-	(string "let" ^^ line ^^ pvar env x ^^ equal)
-	term1
-	(pterm env term2)
+  	(string "let" ^^ line ^^ pvar env x ^^ equal)
+  	term1
+  	(pterm env term2)
+  | TeJoin(j, tvars, vas, vtys, typ, body, rest) -> 
+      let env = Export.bind env j in
+      let body_env =
+          let env = Export.sbind env tvars in
+          Export.sbind env vas
+      in
+      definition
+        (string "join" ^^ line ^^ pvar env j ^^ concat_map (ptype_argument body_env) tvars 
+          ^^ concat_map (pterm_argument body_env) (List.map2 (fun x y -> (x,y)) vas vtys) ^^ colon ^^ pty env typ ^^ equal ^^ space)
+        (pterm body_env body) (pterm env rest)
+  | TeJump(j, tys, tes, ty) ->
+        (string "jump" ^^ line ^^ app (pfields (pterm env)) 
+        (apps (brackets_pty env) (pvar env j) tys) tes ^^ colon ^^ pty env ty) 
   | _ ->
       pterm1 env term
   )

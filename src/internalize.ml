@@ -119,12 +119,12 @@ let rec iterm tctable env = function
       TeLet (x, iterm tctable env term1, iterm tctable env' term2)
 
   | SynTeJoin (x, tyvars, vlist, ty, term1, term2) -> 
+      let x, env' = bind env x in
       let env, tyvars = Import.bind_sequentially env tyvars in
       let env, vatoms  = Import.bind_sequentially env (List.map fst vlist) in
       let vtys = List.map (fun (_,ty) -> itype tctable env ty) vlist in
       let ty = itype tctable env ty in
       let term1 = iterm tctable env term1 in
-      let x, env' = bind env x in
       let term2 = iterm tctable env' term2 in
       TeJoin (x, tyvars, vatoms , vtys, ty, term1, term2)
       

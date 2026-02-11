@@ -84,7 +84,8 @@ type ('a, 'b, 'c, 'd, 'e, 'f) _fterm =
   | TeJoin of 
       atom * 
       atom list *
-      atom list * ftype list * 
+      atom list * 
+      ftype list * 
       ftype *
       ('a, 'b, 'c, 'd, 'e, 'f) _fterm *
       ('a, 'b, 'c, 'd, 'e, 'f) _fterm
@@ -139,6 +140,21 @@ and 'f _pattern =
       'f                                                    (* typechecker meta-data *)
       (* K [ a ... a ] { x; ...; x } *)
 [@@deriving show, map]
+
+let rec size_of = function
+  | TeVar _ -> 1
+  | TeAbs (_,_,t) 
+  | TeTyAnnot (t,_) 
+  | TeLoc(_,t) 
+  | TeTyAbs (_,t)
+  | TeTyApp (t,_,_) -> 1 + size_of t
+  | TeApp (t1,t2,_) 
+  | TeLet (_,t1, t2) 
+  | TeJoin (_,_,_,_,_,t1,t2) -> 1 + size_of t1 + size_of t2
+  | TeJump(_,_,ts,_) 
+  | TeData (_,_,ts,_) -> List.fold_left (fun n t -> n + size_of t) 1 ts
+  | TeMatch (scrutinee, _,clauses,_) -> 1 + size_of scrutinee + List.fold_left (fun n (Clause (_,t)) -> n + size_of t) 1 clauses
+
 
 
 (* ------------------------------------------------------------------------- *)

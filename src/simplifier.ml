@@ -231,7 +231,7 @@ and simplify2
       let tsubst' = Tsubst.binds binders tsubst in
       let body = simplify (Scope (subst, tsubst', body)) in 
       let term = simplify (Scope (subst, tsubst, term)) in
-      TeJoin (j,tys,vas,vtys,ty, body, term)
+      TeJoin (j, tys, vas, vtys, ty, body, term)
 
   | TeJump(j, tys, tes, ty) -> 
       let tes = List.map (fun t -> simplify (Scope (subst, tsubst, t))) tes in

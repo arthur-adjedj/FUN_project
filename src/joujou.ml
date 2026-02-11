@@ -66,17 +66,24 @@ let simplify filename prog =
   else
     prog
 
+let output_pre prog =
+  Printf.printf "%s" (Syntax.show_program prog);
+  prog
+
 let output prog =
-  Printf.printf "%s" (print_program prog)
+  Printf.printf "%s" (print_program prog);
+  prog
 
 let process filename =
   filename
   |> read
-  |> dump "AST" (Format.asprintf "%a" Syntax.pp_program)
+  |> dump "AST" (fun _ -> "")
+  (* |> output_pre *)
   |> Internalize.program
-  |> dump "Internalized" print_program
+  |> dump "Internalized" (fun (Terms.Prog (tctable, dctable, t)) -> string_of_int (Terms.size_of t))
+  (* |> output *)
   |> simplify filename
-  |> dump "Simplified" print_program
+  |> dump "Simplified" (fun (Terms.Prog (tctable, dctable, t)) -> string_of_int (Terms.size_of t))
   |> output
 
 (* -------------------------------------------------------------------------- *)
@@ -90,4 +97,4 @@ let () =
     please_optimize := true;
 
   (* Go! *)
-  process filename
+  ignore (process filename)
