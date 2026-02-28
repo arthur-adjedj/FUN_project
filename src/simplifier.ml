@@ -153,6 +153,16 @@ and simplify1
      (* Drop locations, as they become meaningless *)
      simplify1 args (Scope (subst, tsubst, term))
 
+   (* TODO ensure [result1] is a datatype ? This in theory shouldn't be needed since the term has been type-checked before and the match is already known to be correct *)
+   | TeMatch (TeMatch (scrutinee, result1, clauses1, info1), result2, clauses2, info2), _ -> 
+      let j = Atom.fresh (Identifier.mk "j" Syntax.join_sort) in 
+      let x = Atom.fresh (Identifier.mk "x" Syntax.term_sort) in 
+      let match1 = TeMatch (TeVar (x, result1), result2, clauses2 ,info2) in
+      let new_clauses1 = List.map (fun (Clause (pat, te)) -> Clause(pat, TeJump (j, [], [te], result2))) clauses1 in
+      let match2 = TeMatch (scrutinee, result2, new_clauses1 ,info2) in
+      let term = TeJoin (j, [], [x], [result1], result2, match1, match2) in
+      simplify1 args (Scope (subst, tsubst, term))
+
   (* 1. Build up the evaluation context E[_] in args *)
   | TeApp (term1, term2, info),_ ->
      let args = CtxtApp (Scope (subst, tsubst, (term2, info)), args) in
@@ -186,6 +196,18 @@ and simplify1
    | TeLet (a, lterm, term), args -> 
       let lterm = simplify1 (Nil (Typecheck.type_of lterm)) (Scope (subst, tsubst, lterm)) in
       simplify1 args (Scope (Subst.bind a lterm subst, tsubst, term))
+
+   (*abort*)
+   (* | TeJump (a,tys,te,_), (CtxtApp(Scope (subst, tsubst, _),_) | CtxtTyApp(Scope (subst, tsubst, _),_) | CtxtMatch(Scope (subst, tsubst, _),_)) ->  *)
+         (* let ty = type_of_cont args in *)
+                  (* Is this the right context here ? *)
+         (* simplify1 (Nil ty) (Scope(subst, tsubst, TeJump (a,tys,te,ty))) *)
+
+   (* jfloat, not sure it works*)
+   (* | TeJoin (j, tys , vas, vtys, ty, body, rest), (CtxtApp(Scope (subst, tsubst, _),args) | CtxtTyApp(Scope (subst, tsubst, _),args) | CtxtMatch(Scope (subst, tsubst, _),args)) -> *)
+      (* let body = simplify1 args (Scope (subst, tsubst, body)) in *)
+      (* let rest = simplify1 args (Scope (subst, tsubst, rest)) in *)
+      (* TeJoin (j, tys, vas, vtys, ty, body, rest) *)
       
   | _ ->
      (* 3. Structural rules *)

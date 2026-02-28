@@ -280,8 +280,9 @@ and pterm env term =
           ^^ concat_map (pterm_argument body_env) (List.map2 (fun x y -> (x,y)) vas vtys) ^^ colon ^^ pty env typ ^^ equal ^^ space)
         (pterm body_env body) (pterm env rest)
   | TeJump(j, tys, tes, ty) ->
+      parens (
         (string "jump" ^^ line ^^ app (pfields (pterm env)) 
-        (apps (brackets_pty env) (pvar env j) tys) tes ^^ colon ^^ pty env ty) 
+        (apps (brackets_pty env) (pvar env j) tys) tes ^^ colon ^^ pty env ty))
   | _ ->
       pterm1 env term
   )
