@@ -1,0 +1,1 @@
+I didn't add any fancy things except for checking throwing an error (resp. a warning) when there are missing (resp. redundant) clauses in a match, this happens in `infer`, as it should. Added two tests `bad/redundantclauses.f` and `bad/missingclauses.f` to check these trigger correctly.
