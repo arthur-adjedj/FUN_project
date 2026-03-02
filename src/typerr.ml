@@ -39,14 +39,18 @@ let arity_mismatch xenv loc kind1 x kind2 expected found =
     kind1 (print_atom xenv x) expected kind2 found kind2
   )
 
-let redundant_clause loc =
-  Error.warning [loc] "Warning: this clause is redundant.\n"
+let redundant_clause xenv loc dc =
+  Error.warning [loc] ("Warning: " ^ print_atom xenv dc ^ " clause is redundant.\n")
 
-let missing_clause xenv loc dc =
-  Error.error [loc] (sprintf
-    "A case for the data constructor %s is missing.\n"
-    (print_atom xenv dc)
-  )
+let rec print_atoms xenv = function
+  | [] -> assert false
+  | [x] -> print_atom xenv x
+  | hd::tl -> print_atom xenv hd ^ "," ^ print_atoms xenv tl
+
+let missing_clauses xenv loc dc ctors =
+  Error.error [loc] 
+    ("The following cases for the data constructor "^(print_atom xenv dc) ^" are missing: \n" ^ print_atoms xenv ctors)
+
 
 (* ------------------------------------------------------------------------- *)
 

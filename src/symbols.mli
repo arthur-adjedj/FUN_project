@@ -8,6 +8,8 @@ open Terms
 
 val fv: ('a, 'b, 'c, 'd, 'e, 'f) _fterm -> AtomSet.t
 
+val head : ftype_info -> atom
+
 (* [type_constructor p dc] produces the type constructor with which the
    data constructor [dc] is associated. *)
 

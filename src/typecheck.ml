@@ -114,8 +114,14 @@ let rec infer              (* [infer] expects... *)
   
   | TeMatch (t, ty, clauses, info) ->
     let t_ty = infer p xenv loc tsubst tenv jenv t in  
+    let dc = head t_ty in
+    let ctors = data_constructors p dc in
+    let clauses_ctors = List.fold_left (fun set (Clause (PatData (loc, dc, _, _, _),_)) -> if AtomSet.mem dc set then redundant_clause xenv loc dc; AtomSet.add dc set) AtomSet.empty clauses in
+    let ctors_diff = AtomSet.diff ctors clauses_ctors in
+    if AtomSet.cardinal ctors_diff != 0 then 
+        missing_clauses xenv loc dc (AtomSet.elements ctors_diff);
     List.iter (check_clause p xenv tsubst tenv jenv t_ty ty) clauses;
-    info := Some ty;
+    info := Some t_ty;
     ty
 
   | TeLoc(loc, term) ->
